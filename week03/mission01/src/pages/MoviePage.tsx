@@ -2,6 +2,7 @@ import { useEffect, useState } from "react"
 import type { Movie, MovieResponse} from "../types/movie";
 import MovieCard from "../components/MoiveCard";
 import { LoadingSpinner } from "../components/LoadingSpinner";
+import { useParams } from "react-router-dom";
 
 export default function MoviePage() {
     const [movies,setMovies] = useState<Movie[]>([]);
@@ -13,6 +14,13 @@ export default function MoviePage() {
     // 3. 페이지
     const [page, setPage] = useState(1);
 
+
+    const {category} = useParams<{  // 구조분해할당 사용
+        category:string;
+    }>();
+
+    console.log(category)
+
     {/* 마운트 될때 한번만 실행 시켜주기 위해 useEffect 선언 */}
     useEffect(() =>{
         const fetchMovies=async () => {
@@ -20,7 +28,7 @@ export default function MoviePage() {
 
             {/* fetch는 제네릭 방식 못씀(axios 만 가능) */}
            try{
-             const response= await fetch(`https://api.themoviedb.org/3/movie/popular?language=en-US&page=${page}`,
+             const response= await fetch(`https://api.themoviedb.org/3/movie/${category}?language=en-US&page=${page}`,
                 {
                     headers: {
                         Authorization: `Bearer ${import.meta.env.VITE_TMDB_KEY}`,
@@ -41,7 +49,7 @@ export default function MoviePage() {
         };
            
         fetchMovies();
-    },[page]);
+    },[page,category]);
 
     if(isError) {
     return  (
@@ -50,7 +58,7 @@ export default function MoviePage() {
     </div>
     );
    }
-   
+
     return (
         <>
         <div className="flex items-center justify-center gap-6 mt-5">
