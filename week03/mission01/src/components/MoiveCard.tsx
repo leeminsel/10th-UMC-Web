@@ -12,7 +12,7 @@ export default function MovieCard({movie}:MovieCardProps) {
     <div className="relative rounded-xl shadow-lg overflow-hidden cursor-pointer w-44 transition-transform duration-500 hover:scale-105"   
     onMouseEnter={() => setIsHovered(true)}
     onMouseLeave={() => setIsHovered(false)}
-    > {/* classname = "hover: " 이렇게 해도 상관없음*/}
+    > {/* classname = "hover:display-none .." 이런식으로 해도 상관없음*/}
 
 
         <img src={`https://image.tmdb.org/t/p/w200${movie.poster_path}`} alt={`${movie.title}영화의 이미지`} 
