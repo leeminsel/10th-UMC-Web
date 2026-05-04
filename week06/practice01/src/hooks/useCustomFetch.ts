@@ -1,6 +1,12 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 
 const STALE_TIME=0.5*60*1000 //5분
+
+const MAX_RETRIES=3;
+
+//1초마다 재시도
+const INITIAL_RETRY_DELAY=1000;
+
 
 // 로컬스토리지에 저장할 데이터 구조
 interface CacheEntry<T> {
@@ -13,13 +19,18 @@ export const useCustomFetch = <T>(url: string) => {
   const [isPending, setIsPending]=useState<boolean>(false);
   const[isError, setIsError] = useState<boolean>(false);
   
-  const storageKey = useMemo(() => url+'cache',[url]);
+  const storageKey = useMemo(() => url ,[url]);
 
+  const abortControllerRef=useRef<AbortController|null>(null);
 
-  useEffect(():void => {
+  const retryTimeoutRef=useRef<number|null>(null);
+
+  useEffect(() => {
+
+    abortControllerRef.current=new AbortController();
     setIsError(false);
 
-   const fetchData=async():Promise<void> => {
+   const fetchData=async(currentRetry=0):Promise<void> => {
     const currentTime=new Date().getTime();
     const cachedItem=localStorage.getItem(storageKey);
 
@@ -45,12 +56,11 @@ export const useCustomFetch = <T>(url: string) => {
     }
 
 
-
-
-
     setIsPending(true);
     try {
-        const response = await fetch(url);
+        const response = await fetch(url, {
+            signal: abortControllerRef.current?.signal,
+        });
 
         if(!response.ok) {
             throw new Error('Failed to fetch data');
@@ -66,6 +76,29 @@ export const useCustomFetch = <T>(url: string) => {
 
         localStorage.setItem(storageKey, JSON.stringify(newCacheEntry));
     }catch(error) {
+
+        if(error instanceof Error && error.name==='AbortError') {
+            console.log('요청 취소됨',url);
+
+            return;
+         }
+
+         if(currentRetry < MAX_RETRIES) {
+            //1->2->4->8
+            const retryDelay=INITIAL_RETRY_DELAY*Math.pow(2,currentRetry);
+            console.log(`재시도, ${currentRetry+1}/${MAX_RETRIES} Retrying ${retryDelay} as later`);
+
+            retryTimeoutRef.current=setTimeout(()=> {
+                fetchData(currentRetry+1);
+            },retryDelay);
+        } else {
+            //최대 재시도 횟수 초과
+            setIsError(true);
+            setIsPending(false);
+            console.log('최대 재시도 횟수 초과',url);
+            return;
+        }
+
         setIsError(true);
         console.log(error);
     }finally {
@@ -73,6 +106,16 @@ export const useCustomFetch = <T>(url: string) => {
     }
    };
    fetchData();
+
+   return ()=> {
+    abortControllerRef.current?.abort();
+
+    //예약된 재시도 타이머 취소
+    if(retryTimeoutRef.current!==null) {
+        clearTimeout(retryTimeoutRef.current);
+        retryTimeoutRef.current=null;
+    }
+   }
  },[url,storageKey]);
 
  return {data,isPending,isError};
