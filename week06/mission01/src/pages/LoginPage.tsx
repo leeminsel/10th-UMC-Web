@@ -35,8 +35,9 @@ export const LoginPage = () => {
     Object.values(values).some((value:string) => value==="");
 
   return (
-    <div className=" flex flex-col items-center justify-center h-full gap-4">
+    <div className="flex flex-col items-center justify-center flex-1 gap-4">
         <div className="flex flex-col gap-3">
+        <h2 className="text-2xl font-bold text-center text-[#1a1a2e]">로그인</h2>
         <input
         {...getInputProps("email")}
         name="email"

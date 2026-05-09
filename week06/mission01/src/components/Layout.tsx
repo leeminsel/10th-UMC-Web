@@ -87,7 +87,7 @@ const Layout = () => {
       </aside>
 
       {/* Main */}
-      <main className="mt-[60px] min-h-[calc(100vh-60px)] p-6 bg-[#f5f5f5]">
+      <main className="mt-[60px] min-h-[calc(100vh-60px)] p-6 bg-[#f5f5f5] flex flex-col">
         <Outlet />
       </main>
 

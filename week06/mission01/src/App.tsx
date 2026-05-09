@@ -28,9 +28,9 @@ function App() {
               <Route path="/" element={<LpListPage />} />
               <Route path="/lp/:id" element={<LpDetailPage />} />
               <Route path="/my" element={<MyPage />} />
+              <Route path="/login" element={<LoginPage />} />
+              <Route path="/signup" element={<SignupPage />} />
             </Route>
-            <Route path="/login" element={<LoginPage />} />
-            <Route path="/signup" element={<SignupPage />} />
             <Route path="/v1/auth/google/callback" element={<GoogleLoginRedirectPage />} />
           </Routes>
         </BrowserRouter>
