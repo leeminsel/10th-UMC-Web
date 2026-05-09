@@ -56,7 +56,6 @@
   min-height: 100svh;
   display: flex;          /* 추가 */
   flex-direction: column; /* 추가 (상단 네비바 등이 있을 경우 대비) */
-  align-items: center;    /* 추가 (가로 중앙) */
 }
 
 body {

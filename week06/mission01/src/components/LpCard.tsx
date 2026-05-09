@@ -22,7 +22,7 @@ const LpCard = ({ lp }: Props) => {
   return (
     <div
       onClick={() => navigate(`/lp/${lp.id}`)}
-      className="border border-[#ddd] rounded-lg p-[10px] cursor-pointer hover:shadow-md transition-shadow"
+      className="rounded-sm cursor-pointer overflow-hidden transition-transform duration-300 hover:scale-105"
     >
       {imgError ? (
         <div className="w-full aspect-square rounded bg-[#e0e0e0] flex items-center justify-center text-[#999] text-sm">
@@ -36,13 +36,6 @@ const LpCard = ({ lp }: Props) => {
           onError={() => setImgError(true)}
         />
       )}
-      <h3 className="mt-2 mb-1 text-base font-semibold">{lp.title}</h3>
-      <p className="text-xs text-[#666] mb-2">{lp.content.slice(0, 30)}...</p>
-      <div className="flex gap-1 flex-wrap">
-        {lp.tags.map(tag => (
-          <span key={tag.id} className="text-[0.7rem] text-blue-500">#{tag.name}</span>
-        ))}
-      </div>
     </div>
   );
 };
