@@ -1,29 +1,48 @@
 import axios, { type InternalAxiosRequestConfig } from "axios";
 import { LOCAL_STORAGE_KEY } from "../constants/key";
-import { useLocalStorage } from "../hooks/useLocalStorage";
 
 interface CustomInternalAxiosRequestConfig extends InternalAxiosRequestConfig {
     _retry?:boolean;
 }
 
-let refreshPromise:Promise<string> |null=null;
+let refreshPromise: Promise<string | void> | null = null;
 
 export const axiosInstance=axios.create({
     baseURL:import.meta.env.VITE_SERVER_API_URL,
 })
 
-axiosInstance.interceptors.request.use((config) => {
-    const{getItem} = useLocalStorage(LOCAL_STORAGE_KEY.accessToken);
-    const accessToken=getItem();
+const getToken = (key: string): string | null => {
+    try {
+        const raw = localStorage.getItem(key);
+        if (!raw) return null;
+        try {
+            return JSON.parse(raw); // useLocalStorage가 JSON.stringify로 저장한 경우
+        } catch {
+            return raw; // plain string으로 저장된 경우 fallback
+        }
+    } catch {
+        return null;
+    }
+};
 
-   if(accessToken) {
-    config.headers=config.headers ||{};
-    config.headers.Authorization=`Bearer ${accessToken}`;
-   }
+const setToken = (key: string, value: string) => {
+    localStorage.setItem(key, JSON.stringify(value));
+};
+
+const removeToken = (key: string) => {
+    localStorage.removeItem(key);
+};
+
+axiosInstance.interceptors.request.use((config) => {
+    const accessToken = getToken(LOCAL_STORAGE_KEY.accessToken);
+
+    if (accessToken) {
+        config.headers.set('Authorization', `Bearer ${accessToken}`);
+    }
 
     return config;
 },
-(error)=> Promise.reject(error),
+(error) => Promise.reject(error),
 )
 
 axiosInstance.interceptors.response.use(
@@ -31,13 +50,13 @@ axiosInstance.interceptors.response.use(
     async(error) => {
         const originalRequest:CustomInternalAxiosRequestConfig=error.config;
 
+        const isRefreshRequest = originalRequest.url?.includes('/v1/auth/refresh');
+
         if(error.response && error.response.status===401 && !originalRequest._retry) {
 
-            if(originalRequest.url==='/v1/auth/refresh') {
-                const {removeItem:removeAccessToken}=useLocalStorage(LOCAL_STORAGE_KEY.accessToken);
-                const {removeItem:removeRefreshToken}=useLocalStorage(LOCAL_STORAGE_KEY.refreshToken);
-                removeAccessToken();
-                removeRefreshToken();
+            if(isRefreshRequest) {
+                removeToken(LOCAL_STORAGE_KEY.accessToken);
+                removeToken(LOCAL_STORAGE_KEY.refreshToken);
                 window.location.href="/login";
                 return Promise.reject(error);
             }
@@ -46,33 +65,32 @@ axiosInstance.interceptors.response.use(
 
             if(!refreshPromise) {
                 refreshPromise=(async()=> {
-                const{getItem:getRefreshToken}=useLocalStorage(LOCAL_STORAGE_KEY.refreshToken)
-                const refreshToken=getRefreshToken();
+                    const refreshToken = getToken(LOCAL_STORAGE_KEY.refreshToken);
 
-                const {data} =await axiosInstance.post('/v1/auth/refresh', {
-                    refresh:refreshToken,
-                })
+                    const {data} = await axiosInstance.post('/v1/auth/refresh', {
+                        refresh: refreshToken,
+                    });
 
-                const{setItem:setAccessToken}=useLocalStorage(LOCAL_STORAGE_KEY.accessToken);
-                const{setItem:setRefreshToken}=useLocalStorage(LOCAL_STORAGE_KEY.refreshToken);
-                setAccessToken(data.data.accessToken);
-                setRefreshToken(data.data.refreshToken);
+                    setToken(LOCAL_STORAGE_KEY.accessToken, data.data.accessToken);
+                    setToken(LOCAL_STORAGE_KEY.refreshToken, data.data.refreshToken);
 
-                return data.data.accessToken;
+                    return data.data.accessToken as string;
                 })()
-                .catch((error) => {
-                    const{removeItem:removeAccessToken}=useLocalStorage(LOCAL_STORAGE_KEY.accessToken)
-                    const{removeItem:removeRefreshToken}=useLocalStorage(LOCAL_STORAGE_KEY.refreshToken)
-                    removeAccessToken();
-                    removeRefreshToken();
-                }).finally(()=> {
-                    refreshPromise=null;
+                .catch(() => {
+                    removeToken(LOCAL_STORAGE_KEY.accessToken);
+                    removeToken(LOCAL_STORAGE_KEY.refreshToken);
+                    window.location.href="/login";
+                })
+                .finally(() => {
+                    refreshPromise = null;
                 })
             }
-            return refreshPromise.then((newAccessToken)=> {
-                originalRequest.headers['Authorization']=`Bearer ${newAccessToken}`;
+
+            return refreshPromise.then((newAccessToken) => {
+                if (!newAccessToken) return Promise.reject(error);
+                originalRequest.headers['Authorization'] = `Bearer ${newAccessToken}`;
                 return axiosInstance.request(originalRequest);
-            })
+            });
         }
         return Promise.reject(error);
     }

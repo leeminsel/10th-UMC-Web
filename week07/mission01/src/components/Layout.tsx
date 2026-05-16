@@ -95,7 +95,7 @@ const Layout = () => {
 
       {/* Floating Button */}
       <button
-        onClick={() => setModalOpen(true)}
+        onClick={() => accessToken ? setModalOpen(true) : navigate('/login')}
         title="LP 추가"
         className="fixed bottom-7 right-7 w-14 h-14 rounded-full bg-[#e94560] text-white text-3xl border-none cursor-pointer z-[300] shadow-lg flex items-center justify-center hover:bg-[#c73652] transition-colors leading-none"
       >

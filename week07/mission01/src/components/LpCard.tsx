@@ -24,7 +24,7 @@ const LpCard = ({ lp }: Props) => {
       onClick={() => navigate(`/lp/${lp.id}`)}
       className="rounded-sm cursor-pointer overflow-hidden transition-transform duration-300 hover:scale-105"
     >
-      {imgError ? (
+      {imgError || !lp.thumbnail ? (
         <div className="w-full aspect-square rounded bg-[#e0e0e0] flex items-center justify-center text-[#999] text-sm">
           No Image
         </div>

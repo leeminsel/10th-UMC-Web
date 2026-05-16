@@ -42,7 +42,7 @@ const LpDetailPage = () => {
       </button>
       <hr className="mb-4" />
 
-      {imgError ? (
+      {imgError || !lp.thumbnail ? (
         <div className="w-full max-w-[400px] aspect-square bg-[#e0e0e0] flex items-center justify-center text-[#999] rounded-lg mb-4">
           No Image
         </div>

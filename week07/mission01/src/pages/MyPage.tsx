@@ -40,7 +40,7 @@ export const MyPage = () => {
         <div className="bg-white rounded-2xl shadow-xl p-6 border border-gray-100">
           <div className="flex flex-col items-center mb-6">
             <div className="w-24 h-24 bg-[#dda5e3] rounded-full flex items-center justify-center text-white text-3xl mb-4">
-              {user.avatar ? (
+              {user.avatar && user.avatar !== '' ? (
                 <img src={user.avatar} alt="Profile" className="w-full h-full rounded-full object-cover" />
               ) : (
                 user.name.charAt(0)

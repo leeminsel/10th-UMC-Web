@@ -1,4 +1,7 @@
 import { useRef, useEffect, useState } from 'react';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { isAxiosError } from 'axios';
+import { createLp, uploadImage } from '../apis/lp';
 
 interface CreateLpModalProps {
   onClose: () => void;
@@ -7,10 +10,34 @@ interface CreateLpModalProps {
 const CreateLpModal = ({ onClose }: CreateLpModalProps) => {
   const overlayRef = useRef<HTMLDivElement>(null);
   const [preview, setPreview] = useState<string | null>(null);
+  const [thumbnailUrl, setThumbnailUrl] = useState('');
+  const [isUploading, setIsUploading] = useState(false);
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
   const [tagInput, setTagInput] = useState('');
   const [tags, setTags] = useState<string[]>([]);
+
+  const queryClient = useQueryClient();
+
+  const { mutate, isPending } = useMutation({
+    mutationFn: createLp,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['lps'] });
+      onClose();
+    },
+    onError: (error) => {
+      if (isAxiosError(error)) {
+        console.error('[LP 생성 오류]', error.response?.data);
+        if (error.response?.status === 401) {
+          alert('로그인 세션이 만료되었습니다. 다시 로그인해주세요.');
+          window.location.href = '/login';
+        } else {
+          const msg = error.response?.data?.message;
+          alert(`LP 등록에 실패했습니다.\n${Array.isArray(msg) ? msg.join('\n') : msg ?? ''}`);
+        }
+      }
+    },
+  });
 
   // ESC 키로 닫기
   useEffect(() => {
@@ -31,10 +58,20 @@ const CreateLpModal = ({ onClose }: CreateLpModalProps) => {
     if (e.target === overlayRef.current) onClose();
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     setPreview(URL.createObjectURL(file));
+    setIsUploading(true);
+    try {
+      const imageUrl = await uploadImage(file);
+      setThumbnailUrl(imageUrl);
+    } catch {
+      setPreview(null);
+      alert('이미지 업로드에 실패했습니다. 다시 시도해주세요.');
+    } finally {
+      setIsUploading(false);
+    }
   };
 
   const handleAddTag = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -74,14 +111,21 @@ const CreateLpModal = ({ onClose }: CreateLpModalProps) => {
           {/* 이미지 업로드 */}
           <div>
             <label className="block text-sm font-semibold text-gray-700 mb-2">LP 사진</label>
+
+            {/* 미리보기 + 파일 선택 */}
             <label className="cursor-pointer block">
               <div className="w-full aspect-square max-w-[220px] mx-auto rounded-xl border-2 border-dashed border-[#dda5e3] flex items-center justify-center overflow-hidden bg-[#fdf5ff] hover:bg-[#f7eaff] transition-colors">
                 {preview ? (
-                  <img src={preview} alt="미리보기" className="w-full h-full object-cover" />
+                  <img
+                    src={preview}
+                    alt="미리보기"
+                    className="w-full h-full object-cover"
+                    onError={() => setPreview(null)}
+                  />
                 ) : (
                   <div className="flex flex-col items-center gap-2 text-[#c986d1]">
                     <span className="text-4xl">🎵</span>
-                    <span className="text-xs font-medium">클릭하여 사진 업로드</span>
+                    <span className="text-xs font-medium">클릭하여 이미지 업로드 <span className="text-red-400">*</span></span>
                   </div>
                 )}
               </div>
@@ -92,10 +136,17 @@ const CreateLpModal = ({ onClose }: CreateLpModalProps) => {
                 onChange={handleFileChange}
               />
             </label>
-            {preview && (
+
+            {isUploading && (
+              <p className="mt-2 text-xs text-[#807bff] text-center animate-pulse">업로드 중...</p>
+            )}
+            {!isUploading && thumbnailUrl && (
+              <p className="mt-2 text-xs text-green-500 text-center">업로드 완료</p>
+            )}
+            {!isUploading && preview && (
               <button
-                onClick={() => setPreview(null)}
-                className="mt-2 text-xs text-gray-400 hover:text-red-400 transition-colors block mx-auto cursor-pointer"
+                onClick={() => { setPreview(null); setThumbnailUrl(''); }}
+                className="mt-1 text-xs text-gray-400 hover:text-red-400 transition-colors block mx-auto cursor-pointer"
               >
                 이미지 제거
               </button>
@@ -116,20 +167,28 @@ const CreateLpModal = ({ onClose }: CreateLpModalProps) => {
 
           {/* 내용 */}
           <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-1">내용</label>
+            <label className="block text-sm font-semibold text-gray-700 mb-1">
+              내용 <span className="text-red-400">*</span>
+            </label>
             <textarea
               value={content}
               onChange={e => setContent(e.target.value)}
               placeholder="LP에 대한 설명을 입력하세요"
               rows={3}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm resize-none focus:outline-none focus:border-[#807bff] transition-colors"
+              className={`w-full border rounded-lg px-3 py-2 text-sm resize-none focus:outline-none transition-colors ${
+                !content.trim() ? 'border-red-300 focus:border-red-400' : 'border-gray-300 focus:border-[#807bff]'
+              }`}
             />
+            {!content.trim() && (
+              <p className="text-red-400 text-xs mt-1">내용을 입력해주세요.</p>
+            )}
           </div>
 
           {/* 태그 */}
           <div>
             <label className="block text-sm font-semibold text-gray-700 mb-1">
-              태그 <span className="font-normal text-gray-400 text-xs">(Enter로 추가)</span>
+              태그 <span className="text-red-400">*</span>
+              <span className="font-normal text-gray-400 text-xs ml-1">(Enter로 추가)</span>
             </label>
             <input
               type="text"
@@ -139,7 +198,7 @@ const CreateLpModal = ({ onClose }: CreateLpModalProps) => {
               placeholder="#태그 입력 후 Enter"
               className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#807bff] transition-colors"
             />
-            {tags.length > 0 && (
+            {tags.length > 0 ? (
               <div className="flex flex-wrap gap-2 mt-2">
                 {tags.map(tag => (
                   <span
@@ -156,6 +215,8 @@ const CreateLpModal = ({ onClose }: CreateLpModalProps) => {
                   </span>
                 ))}
               </div>
+            ) : (
+              <p className="text-red-400 text-xs mt-1">태그를 1개 이상 입력해주세요.</p>
             )}
           </div>
         </div>
@@ -164,15 +225,17 @@ const CreateLpModal = ({ onClose }: CreateLpModalProps) => {
         <div className="px-6 py-4 border-t border-gray-100 flex justify-end gap-2">
           <button
             onClick={onClose}
-            className="px-4 py-2 text-sm rounded-lg border border-gray-300 text-gray-600 hover:bg-gray-50 transition-colors cursor-pointer"
+            disabled={isPending}
+            className="px-4 py-2 text-sm rounded-lg border border-gray-300 text-gray-600 hover:bg-gray-50 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
           >
             취소
           </button>
           <button
-            disabled={!title.trim()}
-            className="px-5 py-2 text-sm rounded-lg bg-[#e94560] text-white font-semibold hover:bg-[#c73652] transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed cursor-pointer"
+            disabled={!title.trim() || !content.trim() || !thumbnailUrl.trim() || tags.length === 0 || isUploading || isPending}
+            onClick={() => mutate({ title, content, thumbnail: thumbnailUrl, tags, published: true })}
+            className="px-5 py-2 text-sm rounded-lg bg-[#e94560] text-white font-semibold hover:bg-[#c73652] transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed cursor-pointer min-w-[60px]"
           >
-            등록
+            {isPending ? '등록 중...' : '등록'}
           </button>
         </div>
       </div>
