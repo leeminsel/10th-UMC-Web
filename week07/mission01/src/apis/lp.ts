@@ -1,5 +1,5 @@
 import { axiosInstance } from './axios';
-import type { ApiResponse, LpListResponse, LpItem } from '../types/lp';
+import type { ApiResponse, LpListResponse, LpItem, Comment, CommentListResponse } from '../types/lp';
 
 export const fetchLpList = async (cursor?: number, search?: string, order: string = 'desc') => {
   const { data } = await axiosInstance.get<ApiResponse<LpListResponse>>('/v1/lps', {
@@ -31,4 +31,32 @@ export interface RequestCreateLpDto {
 export const createLp = async (body: RequestCreateLpDto): Promise<LpItem> => {
 const { data } = await axiosInstance.post<ApiResponse<LpItem>>('/v1/lps', body);
   return data.data;
+};
+
+export const fetchComments = async (lpId: string, cursor?: number): Promise<CommentListResponse> => {
+  const { data } = await axiosInstance.get<ApiResponse<CommentListResponse>>(
+    `/v1/lps/${lpId}/comments`,
+    { params: { cursor, limit: 20, order: 'desc' } }
+  );
+  return data.data;
+};
+
+export const createComment = async (lpId: string, content: string): Promise<Comment> => {
+  const { data } = await axiosInstance.post<Comment>(
+    `/v1/lps/${lpId}/comments`,
+    { content }
+  );
+  return data;
+};
+
+export const updateComment = async (lpId: string, commentId: number, content: string): Promise<Comment> => {
+  const { data } = await axiosInstance.patch<ApiResponse<Comment>>(
+    `/v1/lps/${lpId}/comments/${commentId}`,
+    { content }
+  );
+  return data.data;
+};
+
+export const deleteComment = async (lpId: string, commentId: number): Promise<void> => {
+  await axiosInstance.delete(`/v1/lps/${lpId}/comments/${commentId}`);
 };

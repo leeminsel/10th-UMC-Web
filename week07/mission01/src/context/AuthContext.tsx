@@ -8,6 +8,7 @@ interface AuthContextType {
     accessToken: string|null;
     refreshToken: string|null;
     name: string|null;
+    userId: number|null;
     login: (signInDate: RequestSigninDto) => Promise<void>;
     logout: () => Promise<void>;
 }
@@ -16,6 +17,7 @@ export const AuthContext=createContext<AuthContextType>({
     accessToken: null,
     refreshToken: null,
     name: null,
+    userId: null,
     login: async() => {},
     logout: async() => {},
 });
@@ -25,10 +27,12 @@ export const AuthProvider=({children}:PropsWithChildren) =>{
     const{ getItem:getAccessTokenFromStorage, setItem:setAccessTokenInStorage, removeItem:removeAccessTokenFromStorage }= useLocalStorage(LOCAL_STORAGE_KEY.accessToken);
     const{ getItem:getRefreshTokenFromStorage, setItem:setRefreshTokenInStorage, removeItem:removeRefreshTokenFromStorage }=useLocalStorage(LOCAL_STORAGE_KEY.refreshToken);
     const{ getItem:getNameFromStorage, setItem:setNameInStorage, removeItem:removeNameFromStorage }=useLocalStorage(LOCAL_STORAGE_KEY.name);
+    const{ getItem:getUserIdFromStorage, setItem:setUserIdInStorage, removeItem:removeUserIdFromStorage }=useLocalStorage(LOCAL_STORAGE_KEY.userId);
 
     const [accessToken, setAccessToken]=useState<string|null>(getAccessTokenFromStorage());
     const [refreshToken, setRefreshToken]=useState<string|null>(getRefreshTokenFromStorage());
     const [name, setName]=useState<string|null>(getNameFromStorage());
+    const [userId, setUserId]=useState<number|null>(getUserIdFromStorage() ? Number(getUserIdFromStorage()) : null);
 
     const login=async(signinData:RequestSigninDto) => {
         try{
@@ -39,10 +43,12 @@ export const AuthProvider=({children}:PropsWithChildren) =>{
                 setAccessTokenInStorage(data.accessToken);
                 setRefreshTokenInStorage(data.refreshToken);
                 setNameInStorage(data.name);
+                setUserIdInStorage(String(data.id));
 
                 setAccessToken(data.accessToken);
                 setRefreshToken(data.refreshToken);
                 setName(data.name);
+                setUserId(data.id);
 
                 alert("로그인 성공");
                 window.location.href="/my";
@@ -59,10 +65,12 @@ export const AuthProvider=({children}:PropsWithChildren) =>{
             removeAccessTokenFromStorage();
             removeRefreshTokenFromStorage();
             removeNameFromStorage();
+            removeUserIdFromStorage();
 
             setAccessToken(null);
             setRefreshToken(null);
             setName(null);
+            setUserId(null);
 
             alert("로그아웃 성공");
         }catch(error){
@@ -72,7 +80,7 @@ export const AuthProvider=({children}:PropsWithChildren) =>{
     }
 
     return (
-        <AuthContext.Provider value={{accessToken, refreshToken, name, login, logout}}>
+        <AuthContext.Provider value={{accessToken, refreshToken, name, userId, login, logout}}>
             {children}
         </AuthContext.Provider>
     )
