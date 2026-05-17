@@ -11,6 +11,7 @@ interface AuthContextType {
     userId: number|null;
     login: (signInDate: RequestSigninDto) => Promise<void>;
     logout: () => Promise<void>;
+    updateName: (newName: string) => void;
 }
 
 export const AuthContext=createContext<AuthContextType>({
@@ -20,6 +21,7 @@ export const AuthContext=createContext<AuthContextType>({
     userId: null,
     login: async() => {},
     logout: async() => {},
+    updateName: () => {},
 });
 
 export const AuthProvider=({children}:PropsWithChildren) =>{
@@ -79,8 +81,13 @@ export const AuthProvider=({children}:PropsWithChildren) =>{
         }
     }
 
+    const updateName = (newName: string) => {
+        setNameInStorage(newName);
+        setName(newName);
+    };
+
     return (
-        <AuthContext.Provider value={{accessToken, refreshToken, name, userId, login, logout}}>
+        <AuthContext.Provider value={{accessToken, refreshToken, name, userId, login, logout, updateName}}>
             {children}
         </AuthContext.Provider>
     )

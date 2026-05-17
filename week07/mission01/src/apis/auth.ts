@@ -1,5 +1,5 @@
 import { LOCAL_STORAGE_KEY } from "../constants/key";
-import type { RequestSignupDto, RequestSigninDto, ResponseSignupDto, ResponseSigninDto, ResponseMyInfoDto } from "../types/auth";
+import type { RequestSignupDto, RequestSigninDto, ResponseSignupDto, ResponseSigninDto, ResponseMyInfoDto, RequestUpdateMyInfoDto, ResponseUpdateMyInfoDto } from "../types/auth";
 import { axiosInstance } from "./axios";
 
 export const postSignup=async(body:RequestSignupDto):Promise<ResponseSignupDto> => {
@@ -20,6 +20,11 @@ export const getMyInfo=async():Promise<ResponseMyInfoDto> => {
     })
     return data;
 }
+
+export const updateMyInfo = async (body: RequestUpdateMyInfoDto): Promise<ResponseUpdateMyInfoDto> => {
+    const { data } = await axiosInstance.patch("/v1/users", body);
+    return data;
+};
 
 export const postLogout=async()=> {
     const{data}=await axiosInstance.post("/v1/auth/signout");
