@@ -17,7 +17,7 @@ interface Props {
 }
 
 const EditProfileModal = ({ user, onClose, onSuccess }: Props) => {
-  const { updateName } = useAuth();
+  const { updateName, name:currentName } = useAuth();
   const [name, setName] = useState(user.name);
   const [bio, setBio] = useState(user.bio ?? '');
   const [avatarUrl, setAvatarUrl] = useState(user.avatar ?? '');
@@ -32,12 +32,19 @@ const EditProfileModal = ({ user, onClose, onSuccess }: Props) => {
         bio: bio.trim(),
         avatar: avatarUrl || undefined,
       }),
+      onMutate: () => {
+        const previousName=currentName; // 롤백용 저장
+        updateName(name.trim());        // Navbar 즉시 반영
+        return {previousName};          // context로 전달
+      },
     onSuccess: (data) => {
-      updateName(data.data.name);
-      onSuccess(data.data);
+      onSuccess(data.data);  // MyPage 로컬 state 업데이트
       onClose();
     },
-    onError: () => {
+    onError: (_err,_vars, context) => {
+      if(context?.previousName) {
+        updateName(context.previousName); // 롤백 
+      }
       alert('프로필 수정에 실패했습니다.');
     },
   });

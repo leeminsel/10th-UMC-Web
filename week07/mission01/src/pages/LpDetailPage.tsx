@@ -6,7 +6,7 @@ import { fetchLpDetail, fetchComments, createComment, updateComment, deleteComme
 import { useAuth } from '../context/AuthContext';
 import CommentSkeleton from '../components/CommentSkeleton';
 import EditLpModal from '../components/EditLpModal';
-import type { Comment } from '../types/lp';
+import type { Comment, LpItem } from '../types/lp';
 
 const COMMENT_SKELETON_COUNT = 3;
 
@@ -86,12 +86,28 @@ const LpDetailPage = () => {
 
   const likeMutation = useMutation({
     mutationFn: () => isLiked ? unlikeLp(id!) : likeLp(id!),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['lp', id] });
+    onMutate: async() => {
+      // 1.진행 중인 refetch 취소 (충돌 방지)
+      await queryClient.cancelQueries({queryKey:['lp',id]});
+      // 2. 현재 캐시 저장(롤백용)
+      const previousLp=queryClient.getQueryData(['lp',id]);
+      // 3. 캐시 즉시 업데이트 
+      queryClient.setQueryData(['lp',id],(old:LpItem) => ({
+        ... old,
+        likes:isLiked?old.likes.filter(like => like.userId !== userId) // 취소
+        : [...old.likes, {id:Date.now(), userId:userId!, lpId:old.id}], // 추가
+      }));
+      return {previousLp}; // context로 전달
     },
-    onError: () => {
+    onError: (_err, _vars, context) => {
+      // api 실패 시 캐시 롤백
+      queryClient.setQueryData(['lp',id], context?.previousLp);
       alert('좋아요 처리 중 오류가 발생했습니다.');
     },
+    onSettled:() => {
+      //성공/실패 모두 서버 데이터로 최종 동기화
+      queryClient.invalidateQueries({queryKey:['lp',id]});
+    }
   });
 
   const deleteLpMutation = useMutation({
