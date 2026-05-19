@@ -60,3 +60,24 @@ export const updateComment = async (lpId: string, commentId: number, content: st
 export const deleteComment = async (lpId: string, commentId: number): Promise<void> => {
   await axiosInstance.delete(`/v1/lps/${lpId}/comments/${commentId}`);
 };
+
+// LP 수정
+export const updateLp = async (lpId: string, body: Partial<RequestCreateLpDto>) => {
+  const { data } = await axiosInstance.patch<ApiResponse<LpItem>>(`/v1/lps/${lpId}`, body);
+  return data.data;
+};
+
+// LP 삭제
+export const deleteLp = async (lpId: string) => {
+  await axiosInstance.delete(`/v1/lps/${lpId}`);
+};
+
+export const likeLp = async (lpId: string) => {
+  const { data } = await axiosInstance.post<ApiResponse<{ isLiked: boolean }>>(`/v1/lps/${lpId}/likes`);
+  return data.data;
+};
+
+export const unlikeLp = async (lpId: string) => {
+  const { data } = await axiosInstance.delete<ApiResponse<{ isLiked: boolean }>>(`/v1/lps/${lpId}/likes`);
+  return data.data;
+};

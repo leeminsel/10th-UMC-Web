@@ -3,7 +3,7 @@ import { Outlet, Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import CreateLpModal from './CreateLpModal';
 import { useMutation } from '@tanstack/react-query';
-import { deleteAccount } from '../apis/auth';
+import { deleteAccount, postLogout } from '../apis/auth';
 
 
 const BurgerIcon = () => (
@@ -13,7 +13,7 @@ const BurgerIcon = () => (
 );
 
 const Layout = () => {
-  const { accessToken, name, logout, clearAuth } = useAuth();
+  const { accessToken, name, clearAuth } = useAuth();
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
@@ -30,6 +30,17 @@ const Layout = () => {
   onError:()=>{
     alert("탈퇴 처리 중 오류가 발생했습니다.");
   },
+});
+
+const {mutate:logout, isPending:isLogoutPending} = useMutation ({
+  mutationFn:postLogout,
+  onSuccess: () => {
+    clearAuth();
+    alert("로그아웃 성공");
+  },
+  onError: () =>{
+    alert("로그아웃 실패");
+  }
 });
 
   const closeSidebar = () => setSidebarOpen(false);
@@ -62,7 +73,8 @@ const Layout = () => {
                 마이페이지
               </button>
               <button
-                onClick={logout}
+                onClick={() => logout()}
+                disabled={isLogoutPending}
                 className="px-3 py-1.5 cursor-pointer rounded-md border-none bg-[#e94560] text-white text-sm hover:bg-[#c73652] transition-colors"
               >
                 로그아웃

@@ -1,7 +1,7 @@
 import { createContext, useContext, useState, type PropsWithChildren } from "react";
 import { LOCAL_STORAGE_KEY } from "../constants/key";
 import { useLocalStorage } from "../hooks/useLocalStorage";
-import {  postLogout } from "../apis/auth";
+
 
 
 interface AuthContextType {
@@ -10,7 +10,6 @@ interface AuthContextType {
     name: string|null;
     userId: number|null;
     login: (data: {accessToken: string; refreshToken: string; name:string; id:number}) => void;
-    logout: () => Promise<void>;
     updateName: (newName: string) => void;
     clearAuth: () => void; //탈퇴
 }
@@ -21,7 +20,6 @@ export const AuthContext=createContext<AuthContextType>({
     name: null,
     userId: null,
     login: async() => {},
-    logout: async() => {},
     updateName: () => {},
     clearAuth: () => {}
 });
@@ -69,25 +67,6 @@ export const AuthProvider=({children}:PropsWithChildren) =>{
             }
     }
 
-    const logout=async()=>{
-        try{
-            await postLogout();
-            removeAccessTokenFromStorage();
-            removeRefreshTokenFromStorage();
-            removeNameFromStorage();
-            removeUserIdFromStorage();
-
-            setAccessToken(null);
-            setRefreshToken(null);
-            setName(null);
-            setUserId(null);
-
-            alert("로그아웃 성공");
-        }catch(error){
-            console.error("로그아웃 오류",error);
-            alert("로그아웃 실패");
-        }
-    }
 
     const updateName = (newName: string) => {
         setNameInStorage(newName);
@@ -95,7 +74,7 @@ export const AuthProvider=({children}:PropsWithChildren) =>{
     };
 
     return (
-        <AuthContext.Provider value={{accessToken, refreshToken, name, userId, login, logout, updateName,clearAuth}}>
+        <AuthContext.Provider value={{accessToken, refreshToken, name, userId, login, updateName,clearAuth}}>
             {children}
         </AuthContext.Provider>
     )

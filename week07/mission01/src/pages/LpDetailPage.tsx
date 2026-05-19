@@ -2,9 +2,10 @@ import { useState, useRef, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { isAxiosError } from 'axios';
-import { fetchLpDetail, fetchComments, createComment, updateComment, deleteComment } from '../apis/lp';
+import { fetchLpDetail, fetchComments, createComment, updateComment, deleteComment, likeLp, unlikeLp, deleteLp } from '../apis/lp';
 import { useAuth } from '../context/AuthContext';
 import CommentSkeleton from '../components/CommentSkeleton';
+import EditLpModal from '../components/EditLpModal';
 import type { Comment } from '../types/lp';
 
 const COMMENT_SKELETON_COUNT = 3;
@@ -19,6 +20,7 @@ const LpDetailPage = () => {
   const [comment, setComment] = useState('');
   const [commentTouched, setCommentTouched] = useState(false);
 
+  const [editLpModalOpen, setEditLpModalOpen] = useState(false);
   const [openMenuId, setOpenMenuId] = useState<number | null>(null);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editContent, setEditContent] = useState('');
@@ -80,6 +82,33 @@ const LpDetailPage = () => {
     onError: handleCommentError,
   });
 
+  const isLiked = lp?.likes.some(like => like.userId === userId) ?? false;
+
+  const likeMutation = useMutation({
+    mutationFn: () => isLiked ? unlikeLp(id!) : likeLp(id!),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['lp', id] });
+    },
+    onError: () => {
+      alert('좋아요 처리 중 오류가 발생했습니다.');
+    },
+  });
+
+  const deleteLpMutation = useMutation({
+    mutationFn: () => deleteLp(id!),
+    onSuccess: () => {
+      navigate('/');
+    },
+    onError: () => {
+      alert('삭제 중 오류가 발생했습니다.');
+    },
+  });
+
+  const handleDeleteLp = () => {
+    if (!window.confirm('정말 이 LP를 삭제하시겠습니까?')) return;
+    deleteLpMutation.mutate();
+  };
+
   // 메뉴 외부 클릭 시 닫기
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -123,13 +152,33 @@ const LpDetailPage = () => {
   const comments = commentsData?.data ?? [];
 
   return (
+    <>
     <div className="max-w-2xl mx-auto">
-      <button
-        onClick={() => navigate(-1)}
-        className="mb-4 px-4 py-2 rounded bg-gray-200 hover:bg-gray-300 transition-colors cursor-pointer text-sm"
-      >
-        ← 뒤로 가기
-      </button>
+      <div className="flex items-center justify-between mb-4">
+        <button
+          onClick={() => navigate(-1)}
+          className="px-4 py-2 rounded bg-gray-200 hover:bg-gray-300 transition-colors cursor-pointer text-sm"
+        >
+          ← 뒤로 가기
+        </button>
+        {userId === lp.authorId && (
+          <div className="flex gap-2">
+            <button
+              onClick={() => setEditLpModalOpen(true)}
+              className="px-3 py-1 text-sm text-white bg-[#807bff] hover:bg-[#6b66e0] rounded-md transition-colors cursor-pointer"
+            >
+              수정
+            </button>
+            <button
+              onClick={handleDeleteLp}
+              disabled={deleteLpMutation.isPending}
+              className="px-3 py-1 text-sm text-white bg-red-500 hover:bg-red-600 rounded-md transition-colors disabled:opacity-50 cursor-pointer"
+            >
+              {deleteLpMutation.isPending ? '삭제 중...' : '삭제'}
+            </button>
+          </div>
+        )}
+      </div>
       <hr className="mb-4" />
 
       {imgError || !lp.thumbnail ? (
@@ -147,7 +196,21 @@ const LpDetailPage = () => {
 
       <h1 className="text-2xl font-bold mb-2">{lp.title}</h1>
       <p className="text-gray-600 mb-4">{lp.content}</p>
-      <div className="text-red-400 mb-2">❤️ 좋아요: {lp.likes.length}개</div>
+      <button
+        onClick={() => {
+          if (!userId) {
+            alert('로그인이 필요합니다.');
+            navigate('/login');
+            return;
+          }
+          likeMutation.mutate();
+        }}
+        disabled={likeMutation.isPending}
+        className="flex items-center gap-1 text-red-400 hover:text-red-500 transition-colors disabled:opacity-50 cursor-pointer mb-2"
+      >
+        {isLiked ? '❤️' : '🤍'}
+        {lp.likes.length}개
+      </button>
       <div className="flex gap-2 flex-wrap mt-2">
         {lp.tags.map((t) => (
           <span key={t.id} className="text-xs bg-blue-100 text-blue-600 px-2 py-1 rounded-full">
@@ -285,6 +348,11 @@ const LpDetailPage = () => {
         </div>
       </div>
     </div>
+
+    {editLpModalOpen && (
+      <EditLpModal lp={lp!} onClose={() => setEditLpModalOpen(false)} />
+    )}
+  </>
   );
 };
 
