@@ -1,17 +1,18 @@
 import { createContext, useContext, useState, type PropsWithChildren } from "react";
-import type { RequestSigninDto } from "../types/auth";
 import { LOCAL_STORAGE_KEY } from "../constants/key";
 import { useLocalStorage } from "../hooks/useLocalStorage";
-import { postSignin, postLogout } from "../apis/auth";
+import {  postLogout } from "../apis/auth";
+
 
 interface AuthContextType {
     accessToken: string|null;
     refreshToken: string|null;
     name: string|null;
     userId: number|null;
-    login: (signInDate: RequestSigninDto) => Promise<void>;
+    login: (data: {accessToken: string; refreshToken: string; name:string; id:number}) => void;
     logout: () => Promise<void>;
     updateName: (newName: string) => void;
+    clearAuth: () => void; //탈퇴
 }
 
 export const AuthContext=createContext<AuthContextType>({
@@ -22,7 +23,9 @@ export const AuthContext=createContext<AuthContextType>({
     login: async() => {},
     logout: async() => {},
     updateName: () => {},
+    clearAuth: () => {}
 });
+
 
 export const AuthProvider=({children}:PropsWithChildren) =>{
 
@@ -36,9 +39,19 @@ export const AuthProvider=({children}:PropsWithChildren) =>{
     const [name, setName]=useState<string|null>(getNameFromStorage());
     const [userId, setUserId]=useState<number|null>(getUserIdFromStorage() ? Number(getUserIdFromStorage()) : null);
 
-    const login=async(signinData:RequestSigninDto) => {
-        try{
-            const{data}=await postSignin(signinData);
+    const clearAuth=()=> {
+    removeAccessTokenFromStorage();
+    removeRefreshTokenFromStorage();
+    removeNameFromStorage();
+    removeUserIdFromStorage();
+    setAccessToken(null);
+    setRefreshToken(null);
+    setName(null);
+    setUserId(null);
+    }
+
+    // asyne 제거, 파라미터 타입도 변경
+    const login=(data: {accessToken: string; refreshToken: string; name: string; id:number}) => {
             console.log('[로그인 응답]', data);
 
             if(data) {
@@ -52,13 +65,8 @@ export const AuthProvider=({children}:PropsWithChildren) =>{
                 setName(data.name);
                 setUserId(data.id);
 
-                alert("로그인 성공");
-                window.location.href="/my";
+                
             }
-        }catch(error){
-            console.error("로그인 오류",error);
-            alert("로그인 실패");
-        }
     }
 
     const logout=async()=>{
@@ -87,7 +95,7 @@ export const AuthProvider=({children}:PropsWithChildren) =>{
     };
 
     return (
-        <AuthContext.Provider value={{accessToken, refreshToken, name, userId, login, logout, updateName}}>
+        <AuthContext.Provider value={{accessToken, refreshToken, name, userId, login, logout, updateName,clearAuth}}>
             {children}
         </AuthContext.Provider>
     )

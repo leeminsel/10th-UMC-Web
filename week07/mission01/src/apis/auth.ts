@@ -30,3 +30,8 @@ export const postLogout=async()=> {
     const{data}=await axiosInstance.post("/v1/auth/signout");
     return data;
 }
+
+// 탈퇴 api 추가
+export const deleteAccount=async(): Promise<void> => {
+    await axiosInstance.delete("/v1/users");
+}

@@ -2,6 +2,9 @@ import { useState } from 'react';
 import { Outlet, Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import CreateLpModal from './CreateLpModal';
+import { useMutation } from '@tanstack/react-query';
+import { deleteAccount } from '../apis/auth';
+
 
 const BurgerIcon = () => (
   <svg width="28" height="28" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
@@ -10,10 +13,24 @@ const BurgerIcon = () => (
 );
 
 const Layout = () => {
-  const { accessToken, name, logout } = useAuth();
+  const { accessToken, name, logout, clearAuth } = useAuth();
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
+  const [withdrawModalOpen, setWithdrawModalOpen] = useState(false);
+
+  const {mutate:withdraw,isPending} = useMutation ({
+  mutationFn:deleteAccount,
+  onSuccess: () => {
+    setWithdrawModalOpen(false);
+    clearAuth();
+    alert("탈퇴가 완료되었습니다.");
+    navigate("/login");
+  },
+  onError:()=>{
+    alert("탈퇴 처리 중 오류가 발생했습니다.");
+  },
+});
 
   const closeSidebar = () => setSidebarOpen(false);
 
@@ -86,7 +103,37 @@ const Layout = () => {
             🎶 LP 목록
           </Link>
         </nav>
+        {accessToken && (
+          <div className='absolute bottom-4 w-full px-6'>
+              <button onClick={()=> setWithdrawModalOpen(true)}
+                      className='w-full py-2 text-sm text-red-400 hover:text-red-300
+                      transition-colors'> 탈퇴하기</button>
+
+          </div>
+        )}
       </aside>
+      {withdrawModalOpen && (
+    <div className="fixed inset-0 bg-black/50 z-[400] flex items-center justify-center">
+        <div className="bg-white rounded-lg p-6 flex flex-col gap-4 w-[280px]">
+            <p className="text-center font-medium">정말 탈퇴하시겠습니까?</p>
+            <div className="flex gap-3">
+                <button
+                    onClick={() => setWithdrawModalOpen(false)}
+                    className="flex-1 py-2 border rounded-md text-sm"
+                >
+                    아니오
+                </button>
+                <button
+                    onClick={() => withdraw()}
+                    disabled={isPending}
+                    className="flex-1 py-2 bg-red-500 text-white rounded-md text-sm disabled:bg-gray-300"
+                >
+                    {isPending ? "처리 중..." : "예"}
+                </button>
+            </div>
+        </div>
+    </div>
+)}
 
       {/* Main */}
       <main className={`mt-[60px] min-h-[calc(100vh-60px)] p-6 bg-[#f5f5f5] flex flex-col transition-[margin] duration-[250ms] ease-in-out ${sidebarOpen ? 'ml-[220px]' : 'ml-0'}`}>

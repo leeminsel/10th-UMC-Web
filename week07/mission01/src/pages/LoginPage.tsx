@@ -3,10 +3,25 @@ import { useAuth } from "../context/AuthContext";
 import useForm from "../hooks/useForm"
 import { validateSignin, type UserSignInformation } from "../utils/validate"
 import { useNavigate } from "react-router-dom";
+import {useMutation} from "@tanstack/react-query";
+import { postSignin } from "../apis/auth";
 
 export const LoginPage = () => {
     const {login, accessToken} = useAuth();
     const navigate = useNavigate();
+
+    const {mutate:signin,isPending} = useMutation ({
+        mutationFn:postSignin,
+        onSuccess: (response) => {
+            login(response.data);  //AuthContext의 login 호출
+            alert("로그인 성공");
+            navigate("/my");
+        },
+        onError: (error) => {
+            console.error("로그인 실패", error);
+            alert("로그인 실패");
+        },
+    })
 
     useEffect(()=> {
         if(accessToken) {
@@ -22,9 +37,9 @@ export const LoginPage = () => {
         validate: validateSignin
     });
 
-    const handleSubmit=async() => {
+    const handleSubmit= () => {
         console.log('[로그인 요청]', { email: values.email });
-        await login(values);
+        signin(values);
     }
 
     const handleGoogleLogin=()=> {
@@ -63,7 +78,7 @@ export const LoginPage = () => {
         <button
         type='button'
         onClick={handleSubmit}
-        disabled={isDisabled}
+        disabled={isDisabled || isPending}
         className="w-full bg-[#dda5e3] text-white py-3 rounded-md text-lg font-medium hover:bg-[#b2dab1] transition-colors cursor-pointer disabled:bg-gray-300">
             로그인
         </button>
