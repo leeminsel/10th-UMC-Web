@@ -77,7 +77,7 @@ const CreateLpModal = ({ onClose }: CreateLpModalProps) => {
   const handleAddTag = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter' && tagInput.trim()) {
       e.preventDefault();
-      const newTag = tagInput.trim();
+      const newTag =  tagInput.trim().replace(/^#/, '');
       if (!tags.includes(newTag)) setTags(prev => [...prev, newTag]);
       setTagInput('');
     }
@@ -205,7 +205,7 @@ const CreateLpModal = ({ onClose }: CreateLpModalProps) => {
                     key={tag}
                     className="flex items-center gap-1 text-xs bg-blue-100 text-blue-600 px-2 py-1 rounded-full"
                   >
-                    #{tag}
+                    {tag}
                     <button
                       onClick={() => removeTag(tag)}
                       className="hover:text-red-400 transition-colors cursor-pointer leading-none"
