@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import CreateLpModal from './CreateLpModal';
 import { useMutation } from '@tanstack/react-query';
 import { deleteAccount, postLogout } from '../apis/auth';
+import { useSidebar } from '../hooks/useSidebar';
 
 
 
@@ -16,9 +17,9 @@ const BurgerIcon = () => (
 const Layout = () => {
   const { accessToken, name, clearAuth } = useAuth();
   const navigate = useNavigate();
-  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
   const [withdrawModalOpen, setWithdrawModalOpen] = useState(false);
+  const {isOpen:sidebarOpen, close: closeSidebar, toggle} = useSidebar();
 
   const {mutate:withdraw,isPending} = useMutation ({
   mutationFn:deleteAccount,
@@ -44,15 +45,13 @@ const {mutate:logout, isPending:isLogoutPending} = useMutation ({
   }
 });
 
-  const closeSidebar = () => setSidebarOpen(false);
-
   return (
     <div className="font-sans">
       {/* Header */}
       <header className="fixed top-0 left-0 right-0 h-[60px] bg-[#1a1a2e] text-white flex items-center justify-between px-6 z-[200] shadow-md">
         <div className="flex items-center gap-4">
           <button
-            onClick={() => setSidebarOpen(prev => !prev)}
+            onClick={() => toggle()}
             className="bg-transparent border-none text-white cursor-pointer flex items-center p-0"
             aria-label="메뉴 열기"
           >
@@ -116,6 +115,7 @@ const {mutate:logout, isPending:isLogoutPending} = useMutation ({
             🎶 LP 목록
           </Link>
         </nav>
+
         {accessToken && (
           <div className='absolute bottom-4 w-full px-6'>
               <button onClick={()=> setWithdrawModalOpen(true)}
