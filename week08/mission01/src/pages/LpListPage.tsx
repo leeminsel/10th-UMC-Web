@@ -1,9 +1,10 @@
-import { useRef, useEffect, useState } from 'react';
+import {  useEffect, useState } from 'react';
 import { useInfiniteQuery } from '@tanstack/react-query';
 import { fetchLpList } from '../apis/lp';
 import LpCard from '../components/LpCard';
 import LpCardSkeleton from '../components/LpCardSkeleton';
 import { useDebounce } from '../hooks/useDebounce';
+import { useThrottle } from '../hooks/useThrottle';
 
 const SKELETON_COUNT = 8;
 
@@ -13,6 +14,7 @@ const LpListPage = () => {
   const [sort, setSort] = useState<'asc' | 'desc'>('desc');
   // 검색창 클릭 전에는 isFocused(false), enabled(true)로 LP 목록 전체 보여준다.
   const [isFocused, setIsFocused]=useState(false);
+  
 
   const {
     data,
@@ -33,22 +35,27 @@ const LpListPage = () => {
     gcTime:1000*60*5,     // 5분간 캐시 유지
   });
 
-  const bottomRef = useRef<HTMLDivElement>(null);
+  // 2. fetchNextPage를 throttle로 감싸기 (500ms 간격 제한)
+  const throttledFetchNextPage=useThrottle(fetchNextPage,1000);
 
   useEffect(() => {
-    const el = bottomRef.current;
-    if (!el) return;
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting && hasNextPage && !isFetchingNextPage) {
-          fetchNextPage();
-        }
-      },
-      { threshold: 1.0 }
-    );
-    observer.observe(el);
-    return () => observer.disconnect();
-  }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
+  const handleScroll = () => {
+    const scrollTop = window.scrollY;
+    const windowHeight = window.innerHeight;
+    const documentHeight = document.documentElement.scrollHeight;
+
+    // 스크롤이 페이지 하단 100px 이내에 도달했을 때
+    if (scrollTop + windowHeight >= documentHeight - 100) {
+      if (hasNextPage && !isFetchingNextPage) {
+        throttledFetchNextPage();
+      }
+    }
+  };
+
+  window.addEventListener('scroll', handleScroll);
+  return () => window.removeEventListener('scroll', handleScroll);
+}, [hasNextPage, isFetchingNextPage, throttledFetchNextPage]);
+
 
   const allLps = data?.pages.flatMap((page) => page.data) ?? [];
 
@@ -97,7 +104,8 @@ const LpListPage = () => {
                 <LpCardSkeleton key={`next-${i}`} />
               ))}
           </div>
-          <div ref={bottomRef} className="h-4" />
+          {/* 스크롤 감지용 빈 div — 화면에 보이면 다음 페이지 요청 */}
+          <div className="h-4" />
         </>
       )}
     </div>
