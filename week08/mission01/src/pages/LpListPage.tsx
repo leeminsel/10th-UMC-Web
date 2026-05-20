@@ -36,7 +36,7 @@ const LpListPage = () => {
   });
 
   // 2. fetchNextPage를 throttle로 감싸기 (500ms 간격 제한)
-  const throttledFetchNextPage=useThrottle(fetchNextPage,1000);
+  const throttledFetchNextPage=useThrottle(fetchNextPage,500);
 
   useEffect(() => {
   const handleScroll = () => {
