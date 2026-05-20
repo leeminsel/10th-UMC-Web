@@ -19,7 +19,7 @@ const Layout = () => {
   const navigate = useNavigate();
   const [modalOpen, setModalOpen] = useState(false);
   const [withdrawModalOpen, setWithdrawModalOpen] = useState(false);
-  const {isOpen:sidebarOpen, open, close: closeSidebar, toggle} = useSidebar();
+  const {isOpen:sidebarOpen, close: closeSidebar, toggle} = useSidebar();
 
   const {mutate:withdraw,isPending} = useMutation ({
   mutationFn:deleteAccount,
@@ -115,6 +115,7 @@ const {mutate:logout, isPending:isLogoutPending} = useMutation ({
             🎶 LP 목록
           </Link>
         </nav>
+
         {accessToken && (
           <div className='absolute bottom-4 w-full px-6'>
               <button onClick={()=> setWithdrawModalOpen(true)}
