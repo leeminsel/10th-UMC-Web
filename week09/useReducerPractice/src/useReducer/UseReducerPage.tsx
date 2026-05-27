@@ -9,21 +9,24 @@ interface IState {
 // 2. reducer 에 대한 interface
 interface IAction {
   type: 'INCREASE' | 'DECREASE' |'RESET_TO_ZERO';
+  payload: number;
 }
 
 function reducer(state: IState, action: IAction) {
-  const {type}=action; // 구조분해할당
+  const {type, payload}=action; // 구조분해할당
+  console.log(action);
+  console.log(state);
 
   switch(type) {
     case 'INCREASE': 
     return {
       ... state,
-      counter:state.counter +1,
+      counter:state.counter +payload,
     }
     case 'DECREASE' :
       return {
         ... state,
-      counter:state.counter -1,
+      counter:state.counter -payload,
       }
       case 'RESET_TO_ZERO' :
         return {
@@ -61,9 +64,9 @@ export default function UseReducerPage() {
         <div>
           <h2 className="text-3xl">useReducer 훅 사용</h2>
           <h2>{state.counter}</h2>
-          <button onClick={() => dispatch({type: "INCREASE"})}>Increase</button>
-          <button onClick={() => dispatch({type: "DECREASE"})}>Decrease</button>
-          <button onClick={() => dispatch({type: "RESET_TO_ZERO"})}>Reset</button>
+          <button onClick={() => dispatch({type: "INCREASE", payload:3})}>Increase</button>
+          <button onClick={() => dispatch({type: "DECREASE", payload:3})}>Decrease</button>
+          <button onClick={() => dispatch({type: "RESET_TO_ZERO", payload:0})}>Reset</button>
         </div>
       </div>
 

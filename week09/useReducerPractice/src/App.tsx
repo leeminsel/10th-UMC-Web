@@ -1,11 +1,12 @@
 import './App.css'
-import UseReducerPage from './pages/UseReducerPage'
+import UseReducerCompany from './useReducer/UseReducerCompany'
+import UseReducerPage from './useReducer/UseReducerPage'
 
 function App() {
   
   return (
   <>
-  <UseReducerPage/>
+  <UseReducerCompany/>
   </>
   )
 }
