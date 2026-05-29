@@ -61,7 +61,7 @@ const cartSlice=createSlice ({
             let total=0;
 
             state.cartItems.forEach((item) => {
-                amount=item.amount;
+                amount+=item.amount;
                 total += item.amount *item.price;
             })
 
