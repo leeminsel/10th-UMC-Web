@@ -1,8 +1,14 @@
 import { CartItem } from "./CartItem"
-import { useSelector } from "../hooks/useCustomRedux";
+import { useCartActions, useCartInfo } from "../hooks/useCartStore";
 
 export const CartList = () => {
-  const {cartItems, amount, total} = useSelector((state) => state.cart);
+  const {cartItems} = useCartInfo();
+  const {clearCart}  = useCartActions();
+
+ const handleAllClearButton=()=> {
+  clearCart();
+ }
+  
   
 
   
