@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { memo, useState } from "react";
 import type {  MovieFilters } from "../types/movie"
 import { Input } from "./Input";
 import { SelectBox } from "./SelectBox";
@@ -9,12 +9,14 @@ interface MovieFilterProps {
     onChange: (filter: MovieFilters) => void;
 }
 
-export const MovieFilter = ({onChange}:MovieFilterProps) => {
+ const MovieFilter = ({onChange}:MovieFilterProps) => {
+    console.log("리렌더링, Movie Filter")
   const [query, setQuery] =useState<string>("");
   const [includeAdult, setIncludeAdult] = useState<boolean>(false);
   const [language, setLanguage] = useState("ko-KR");
 
-  const handleSubmit = () => {
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
     const filters: MovieFilters= {
         query,
         include_adult:includeAdult,
@@ -26,7 +28,7 @@ export const MovieFilter = ({onChange}:MovieFilterProps) => {
   
   
     return (
-    <div className="transform space-y-6 rounded-2xl border-gray-500 bg-white p-6
+    <form onSubmit={handleSubmit} className="transform space-y-6 rounded-2xl border-gray-500 bg-white p-6
     shadow-xl transition-all hover:shadow-2xl">
         <div className="flex flex-wrap gap-6">
             <div className="min-w-[450px] flex-1">
@@ -62,9 +64,11 @@ export const MovieFilter = ({onChange}:MovieFilterProps) => {
                 ></LanguageSelector>
             </div>
         <div className="pt-4">
-            <button onClick={handleSubmit}>영화 검색</button>
+            <button type="submit">영화 검색</button>
         </div>
         </div>
-    </div>
+    </form>
   )
 }
+
+export default memo(MovieFilter);

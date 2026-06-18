@@ -1,5 +1,5 @@
-import { useMemo, useState } from "react"
-import { MovieFilter } from "../components/MovieFilter"
+import { useCallback, useMemo, useState } from "react"
+import  MovieFilter  from "../components/MovieFilter"
 import  MovieList from "../components/MovieList"
 import useFetch from "../hooks/useFetch"
 import type { MovieFilters, MovieResponse } from "../types/movie"
@@ -20,6 +20,10 @@ export const HomePage = () => {
         axiosRequestConfig,
     )
 
+    const handleMovieFilters = useCallback((filters: MovieFilters) => {
+        setFilters(filters);
+    },[setFilters]);
+
     if(error) {
         return <div>{error}</div>
     }
@@ -27,7 +31,7 @@ export const HomePage = () => {
     
   return (
     <div className="container mx-auto px-4">
-        <MovieFilter onChange={setFilters}/>
+        <MovieFilter onChange={handleMovieFilters}/>
         {isLoading ? (
             <div> 로딩 중 입니다... </div>
         ):(
