@@ -1,8 +1,9 @@
 import { useCallback, useMemo, useState } from "react"
 import  MovieFilter  from "../components/MovieFilter"
 import  MovieList from "../components/MovieList"
+import { MovieDetailModal } from "../components/MovieDetailModal"
 import useFetch from "../hooks/useFetch"
-import type { MovieFilters, MovieResponse } from "../types/movie"
+import type { Movie, MovieFilters, MovieResponse } from "../types/movie"
 
 export const HomePage = () => {
 
@@ -11,6 +12,8 @@ export const HomePage = () => {
         include_adult: false,
         language: "ko-KR",
     })
+
+    const [selectedMovie, setSelectedMovie] = useState<Movie | null>(null);
 
     const axiosRequestConfig = useMemo(() =>({
         params:filters,
@@ -35,9 +38,14 @@ export const HomePage = () => {
         {isLoading ? (
             <div> 로딩 중 입니다... </div>
         ):(
-            <MovieList movies={data?.results || []} />
+            <MovieList movies={data?.results || []} onMovieClick={setSelectedMovie} />
         )}
-
+        {selectedMovie && (
+            <MovieDetailModal
+                movie={selectedMovie}
+                onClose={() => setSelectedMovie(null)}
+            />
+        )}
     </div>
   )
 }
